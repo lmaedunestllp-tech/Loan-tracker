@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Loan Document Tracker</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#f4f6fb;color:#1a1a2e;min-height:100vh}
+.topbar{background:#185FA5;color:#fff;padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between}
+.topbar h1{font-size:17px;font-weight:600}
+.topbar .right{display:flex;align-items:center;gap:10px}
+.container{max-width:960px;margin:0 auto;padding:24px 16px}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:24px}
+.stat{background:#fff;border-radius:12px;padding:14px 16px;border:0.5px solid #e0e4ef}
+.stat-val{font-size:26px;font-weight:600}
+.stat-lbl{font-size:12px;color:#6b7280;margin-top:2px}
+.toolbar{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
+.toolbar input[type=text]{flex:1;min-width:160px;padding:8px 12px;border-radius:8px;border:0.5px solid #d1d5db;font-size:13px;background:#fff}
+.toolbar select{padding:8px 10px;border-radius:8px;border:0.5px solid #d1d5db;font-size:13px;background:#fff}
+.btn{padding:8px 16px;border-radius:8px;border:0.5px solid #d1d5db;font-size:13px;cursor:pointer;background:#fff;color:#1a1a2e;font-weight:500;transition:background 0.15s}
+.btn:hover{background:#f0f4ff}
+.btn-blue{background:#185FA5;color:#fff;border-color:#185FA5}
+.btn-blue:hover{background:#0C447C}
+.btn-sm{padding:4px 10px;font-size:11px;border-radius:6px}
+.btn-red{background:#A32D2D;color:#fff;border-color:#A32D2D}
+.btn-green{background:#1D9E75;color:#fff;border-color:#1D9E75}
+.client-card{background:#fff;border-radius:12px;border:0.5px solid #e0e4ef;margin-bottom:12px;overflow:hidden}
+.client-header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;cursor:pointer;background:#f8f9fc;gap:12px;flex-wrap:wrap}
+.client-left{display:flex;align-items:center;gap:12px}
+.avatar{width:40px;height:40px;border-radius:50%;background:#E6F1FB;color:#0C447C;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;flex-shrink:0}
+.client-name{font-size:15px;font-weight:600}
+.client-sub{font-size:12px;color:#6b7280;margin-top:2px}
+.client-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.prog-wrap{display:flex;align-items:center;gap:8px}
+.prog-bar{width:90px;height:6px;background:#e5e7eb;border-radius:3px;overflow:hidden}
+.prog-fill{height:100%;border-radius:3px;transition:width 0.4s}
+.chip{font-size:11px;padding:3px 9px;border-radius:20px;font-weight:500;white-space:nowrap}
+.chip-red{background:#FCEBEB;color:#A32D2D}
+.chip-green{background:#EAF3DE;color:#3B6D11}
+.chip-amber{background:#FAEEDA;color:#854F0B}
+.chevron{font-size:11px;color:#9ca3af;transition:transform 0.2s;user-select:none}
+.chevron.open{transform:rotate(90deg)}
+.docs-body{display:none;padding:16px;border-top:0.5px solid #e0e4ef}
+.docs-body.open{display:block}
+.docs-actions{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.category-block{margin-bottom:16px}
+.cat-label{font-size:11px;font-weight:600;color:#6b7280;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:6px}
+.doc-row{display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:8px;transition:background 0.12s}
+.doc-row:hover{background:#f4f6fb}
+.doc-row.received{opacity:0.5}
+.doc-row.received .doc-name{text-decoration:line-through;color:#9ca3af}
+.doc-cb{width:16px;height:16px;cursor:pointer;accent-color:#1D9E75;flex-shrink:0}
+.doc-name{font-size:13px;flex:1}
+.upload-btn{font-size:11px;padding:3px 9px;border-radius:6px;border:0.5px solid #d1d5db;background:#f8f9fc;cursor:pointer;color:#185FA5;font-weight:500;white-space:nowrap}
+.upload-btn:hover{background:#E6F1FB}
+.file-link{font-size:11px;color:#1D9E75}
+.doc-status{font-size:10px;padding:2px 7px;border-radius:10px;white-space:nowrap}
+.ds-pending{background:#FAECE7;color:#993C1D}
+.ds-received{background:#EAF3DE;color:#3B6D11}
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:100;align-items:center;justify-content:center}
+.overlay.open{display:flex}
+.modal{background:#fff;border-radius:14px;padding:24px;width:100%;max-width:480px;margin:16px}
+.modal h2{font-size:16px;font-weight:600;margin-bottom:16px}
+.form-group{margin-bottom:12px}
+.form-group label{font-size:12px;color:#6b7280;display:block;margin-bottom:4px}
+.form-group input,.form-group select{width:100%;padding:9px 12px;border-radius:8px;border:0.5px solid #d1d5db;font-size:13px;background:#fff}
+.form-row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.modal-actions{display:flex;gap:8px;margin-top:16px}
+.setup-modal{background:#fff;border-radius:14px;padding:24px;width:100%;max-width:500px;margin:16px}
+.setup-modal h2{font-size:16px;font-weight:600;margin-bottom:8px;color:#854F0B}
+.setup-modal p{font-size:13px;color:#6b7280;margin-bottom:16px;line-height:1.6}
+.setup-modal input{width:100%;padding:10px 12px;border-radius:8px;border:1.5px solid #EF9F27;font-size:13px;margin-bottom:12px}
+.filter-pills{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}
+.pill{font-size:12px;padding:4px 14px;border-radius:20px;border:0.5px solid #d1d5db;background:#fff;cursor:pointer;color:#6b7280}
+.pill.active{background:#185FA5;color:#fff;border-color:#185FA5}
+.empty{text-align:center;padding:48px 16px;color:#9ca3af;font-size:14px}
+.sync-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}
+.dot-green{background:#1D9E75}
+.dot-gray{background:#9ca3af}
+.dot-red{background:#E24B4A}
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1a2e;color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;z-index:999;display:none;white-space:nowrap}
+@media(max-width:600px){.stats{grid-template-columns:1fr 1fr}.form-row2{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <h1>&#128193; Loan Document Tracker</h1>
+  <div class="right">
+    <span id="syncStatus"><span class="sync-dot dot-gray"></span>Offline Mode</span>
+    <button class="btn btn-sm" style="background:rgba(255,255,255,0.15);color:#fff;border-color:rgba(255,255,255,0.3);" onclick="openAdd()">+ Add Client</button>
+    <button class="btn btn-sm" style="background:rgba(255,255,255,0.1);color:#fff;border-color:rgba(255,255,255,0.2);font-size:10px;" onclick="openSetup()">&#9881; Setup</button>
+  </div>
+</div>
+
+<div class="container">
+  <div class="stats">
+    <div class="stat"><div class="stat-val" id="s-total">0</div><div class="stat-lbl">Total Clients</div></div>
+    <div class="stat"><div class="stat-val" style="color:#A32D2D" id="s-pending">0</div><div class="stat-lbl">Pending</div></div>
+    <div class="stat"><div class="stat-val" style="color:#1D9E75" id="s-done">0</div><div class="stat-lbl">Complete</div></div>
+    <div class="stat"><div class="stat-val" id="s-docs">0/0</div><div class="stat-lbl">Docs Received</div></div>
+  </div>
+  <div class="toolbar">
+    <input type="text" id="searchBox" placeholder="Client naam ya loan type dhundein..." oninput="render()" />
+    <select id="loanFilter" onchange="render()">
+      <option value="">All Loan Types</option>
+      <option>Home Loan</option><option>Personal Loan</option><option>Business Loan</option>
+      <option>Car Loan</option><option>Loan Against Property</option>
+    </select>
+    <button class="btn btn-blue" onclick="openAdd()">+ New Client</button>
+  </div>
+  <div class="filter-pills">
+    <span class="pill active" onclick="setFilter('all',this)">Sabhi</span>
+    <span class="pill" onclick="setFilter('pending',this)">Pending hain</span>
+    <span class="pill" onclick="setFilter('complete',this)">Complete</span>
+    <span class="pill" onclick="setFilter('partial',this)">Partial (30-99%)</span>
+  </div>
+  <div id="clientList"></div>
+</div>
+
+<!-- Setup overlay -->
+<div class="overlay open" id="setupOverlay">
+  <div class="setup-modal">
+    <h2>&#9881; Google Drive Setup</h2>
+    <p>Apps Script deploy karne ke baad URL yahan paste karein. Iske baad docs Google Drive mein save honge aur Google Sheets mein track honge.</p>
+    <label style="font-size:12px;color:#6b7280;display:block;margin-bottom:4px;">Apps Script Web App URL</label>
+    <input type="text" id="scriptUrlInput" placeholder="https://script.google.com/macros/s/.../exec" />
+    <div style="font-size:12px;color:#6b7280;margin-bottom:16px;background:#f4f6fb;padding:10px;border-radius:8px;line-height:1.7">
+      <strong>Apps Script deploy steps:</strong><br>
+      1. script.google.com → New Project<br>
+      2. Code.gs paste karo → Save<br>
+      3. Deploy → New Deployment → Web App<br>
+      4. Execute as: <strong>Me</strong> | Access: <strong>Anyone</strong><br>
+      5. Deploy → Allow → URL copy karo
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button class="btn btn-blue" onclick="saveSetup()">Connect Karein</button>
+      <button class="btn" onclick="skipSetup()">Abhi Nahi (Offline Use)</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add client overlay -->
+<div class="overlay" id="addOverlay">
+  <div class="modal">
+    <h2>Naya Client Add Karein</h2>
+    <div class="form-row2">
+      <div class="form-group"><label>Client ka naam *</label><input type="text" id="f-name" placeholder="Ramesh Kumar" /></div>
+      <div class="form-group"><label>Phone number</label><input type="text" id="f-phone" placeholder="9876543210" /></div>
+    </div>
+    <div class="form-row2">
+      <div class="form-group">
+        <label>Loan type *</label>
+        <select id="f-loan">
+          <option value="">-- Select --</option>
+          <option>Home Loan</option><option>Personal Loan</option><option>Business Loan</option>
+          <option>Car Loan</option><option>Loan Against Property</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Bank / NBFC</label>
+        <select id="f-bank">
+          <option value="">-- Select --</option>
+          <option>SBI</option><option>HDFC Bank</option><option>ICICI Bank</option>
+          <option>Axis Bank</option><option>Kotak Mahindra</option><option>PNB</option>
+          <option>Bank of Baroda</option><option>Bajaj Finserv</option>
+          <option>Tata Capital</option><option>IIFL Finance</option>
+          <option>Aditya Birla Finance</option><option>LIC Housing</option><option>Other</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-blue" onclick="addClient()">Add Client</button>
+      <button class="btn" onclick="closeAdd()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const DOC_TEMPLATES = {
+  "Home Loan":{
+    "KYC Documents":["Aadhaar Card","PAN Card","Passport Size Photo","Signature Proof"],
+    "Income Documents":["Last 3 Month Salary Slips","6 Month Bank Statement","Form 16 / ITR 2 Years","Employment Letter"],
+    "Property Documents":["Sale Agreement / Allotment Letter","Property Chain Documents","NOC from Builder / Society","Approved Plan / Layout"],
+    "Other":["Existing Loan Statement (if any)","Processing Fee Cheque"]
+  },
+  "Personal Loan":{
+    "KYC Documents":["Aadhaar Card","PAN Card","Passport Size Photo"],
+    "Income Documents":["Last 3 Month Salary Slips","6 Month Bank Statement","Form 16 / ITR"],
+    "Other":["Employment Letter","Existing Loan Statement (if any)"]
+  },
+  "Business Loan":{
+    "KYC Documents":["Aadhaar Card (Proprietor)","PAN Card (Business + Individual)","Passport Size Photo"],
+    "Business Documents":["GST Registration Certificate","Business Proof (Shop Act / Udyam)","ITR 2 Years with P&L & Balance Sheet","12 Month Current Account Statement"],
+    "Other":["Business Ownership Proof","Existing Loan Statement (if any)"]
+  },
+  "Car Loan":{
+    "KYC Documents":["Aadhaar Card","PAN Card","Passport Size Photo","Driving License"],
+    "Income Documents":["Last 3 Month Salary Slips","6 Month Bank Statement","Form 16 / ITR"],
+    "Vehicle Documents":["Car Quotation from Dealer","Vehicle Insurance (for used car)","RC Book (for used car)"]
+  },
+  "Loan Against Property":{
+    "KYC Documents":["Aadhaar Card","PAN Card","Passport Size Photo","Signature Proof"],
+    "Income Documents":["Last 3 Month Salary Slips / ITR","12 Month Bank Statement","Form 16 / Audited Financials"],
+    "Property Documents":["Property Title Deed","Chain of Documents (min 13 years)","Property Tax Receipt","Society NOC / Encumbrance Certificate","Approved Plan / Layout","Property Valuation Report (if available)"]
+  }
+};
+
+let SCRIPT_URL = localStorage.getItem("ltScriptUrl") || "";
+let clients = JSON.parse(localStorage.getItem("ltClients") || "[]");
+let filter = "all";
+
+// ── Setup ──────────────────────────────────────────────────────
+function openSetup() { document.getElementById("setupOverlay").classList.add("open"); }
+
+function saveSetup() {
+  const url = document.getElementById("scriptUrlInput").value.trim();
+  if (!url.includes("script.google.com")) { toast("Sahi URL daalo!"); return; }
+  SCRIPT_URL = url;
+  localStorage.setItem("ltScriptUrl", url);
+  document.getElementById("setupOverlay").classList.remove("open");
+  syncFromServer();
+}
+
+function skipSetup() {
+  document.getElementById("setupOverlay").classList.remove("open");
+  toast("Offline mode mein kaam kar rahe hain");
+}
+
+window.onload = () => {
+  if (SCRIPT_URL) {
+    document.getElementById("scriptUrlInput").value = SCRIPT_URL;
+    document.getElementById("setupOverlay").classList.remove("open");
+    syncFromServer();
+  }
+  render();
+};
+
+// ── API — fetch with no-cors fallback ─────────────────────────
+async function callScript(data) {
+  if (!SCRIPT_URL) return null;
+  try {
+    const r = await fetch(SCRIPT_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain" },
+      body: JSON.stringify(data)
+    });
+    return await r.json();
+  } catch(e) {
+    console.error("API error:", e);
+    return null;
+  }
+}
+
+async function callScriptGet(params) {
+  if (!SCRIPT_URL) return null;
+  try {
+    const url = SCRIPT_URL + "?" + new URLSearchParams(params);
+    const r = await fetch(url, { method: "GET" });
+    return await r.json();
+  } catch(e) {
+    console.error("API GET error:", e);
+    return null;
+  }
+}
+
+async function syncFromServer() {
+  setSync("syncing");
+  const res = await callScriptGet({ action: "getClients" });
+  if (res && res.success) {
+    clients = res.clients;
+    save();
+    setSync("connected");
+    toast("Google Drive se sync ho gaya!");
+  } else {
+    setSync("offline");
+  }
+  render();
+}
+
+function setSync(s) {
+  const el = document.getElementById("syncStatus");
+  if (s === "connected") el.innerHTML = '<span class="sync-dot dot-green"></span>Drive Connected';
+  else if (s === "syncing") el.innerHTML = '<span class="sync-dot dot-gray"></span>Syncing...';
+  else el.innerHTML = '<span class="sync-dot dot-red"></span>Offline Mode';
+}
+
+// ── Helpers ───────────────────────────────────────────────────
+function save() { localStorage.setItem("ltClients", JSON.stringify(clients)); }
+function initials(n) { return n.trim().split(" ").map(w=>w[0]).join("").toUpperCase().slice(0,2); }
+function getProg(c) {
+  const t = Object.keys(c.docs).length;
+  const d = Object.values(c.docs).filter(Boolean).length;
+  return { total:t, done:d, pct: t ? Math.round(d/t*100) : 0 };
+}
+function progColor(p) {
+  return p===100?"#1D9E75":p>=60?"#EF9F27":p>=30?"#378ADD":"#E24B4A";
+}
+
+// ── Add client ────────────────────────────────────────────────
+function openAdd()  { document.getElementById("addOverlay").classList.add("open"); }
+function closeAdd() { document.getElementById("addOverlay").classList.remove("open"); }
+
+async function addClient() {
+  const name  = document.getElementById("f-name").value.trim();
+  const phone = document.getElementById("f-phone").value.trim();
+  const loan  = document.getElementById("f-loan").value;
+  const bank  = document.getElementById("f-bank").value;
+  if (!name || !loan) { toast("Naam aur loan type zaroori hai!"); return; }
+
+  const tmpl = DOC_TEMPLATES[loan];
+  const docs = {};
+  Object.entries(tmpl).forEach(([cat,items]) => items.forEach(doc => { docs[cat+"::"+doc] = false; }));
+
+  const client = {
+    id: Date.now().toString(), name, phone, loanType: loan, bank,
+    createdAt: new Date().toLocaleDateString("en-IN"),
+    docs, driveFolderUrl: "", fileUrls: {}
+  };
+  clients.unshift(client);
+  save(); closeAdd(); render();
+  toast("Client add ho gaya!");
+
+  if (SCRIPT_URL) {
+    const res = await callScript({ action: "addClient", client });
+    if (res && res.success) {
+      client.driveFolderUrl = res.driveFolderUrl;
+      save(); render();
+      toast("Drive folder ready! ✓");
+    }
+  }
+
+  ["f-name","f-phone"].forEach(id => document.getElementById(id).value = "");
+  document.getElementById("f-loan").value = "";
+  document.getElementById("f-bank").value = "";
+}
+
+// ── Toggle doc ────────────────────────────────────────────────
+async function toggleDoc(cid, key, val) {
+  const c = clients.find(x=>x.id===cid);
+  if (!c) return;
+  c.docs[key] = val;
+  save(); render();
+  if (SCRIPT_URL) await callScript({ action:"updateDoc", clientId:cid, docKey:key, received:val });
+}
+
+// ── Upload ────────────────────────────────────────────────────
+function triggerUpload(cid, key, cat, btn) {
+  const inp = document.createElement("input");
+  inp.type = "file"; inp.multiple = true;
+  inp.accept = ".pdf,.jpg,.jpeg,.png,.doc,.docx";
+  inp.onchange = () => handleFiles(cid, key, cat, Array.from(inp.files), btn);
+  inp.click();
+}
+
+async function handleFiles(cid, key, cat, files, btn) {
+  const c = clients.find(x=>x.id===cid);
+  if (!c) return;
+  for (const file of files) {
+    btn.textContent = "Uploading...";
+    btn.disabled = true;
+    if (SCRIPT_URL) {
+      const b64 = await toBase64(file);
+      const res = await callScript({
+        action:"uploadFile", clientId:cid, clientName:c.name,
+        docKey:key, category:cat,
+        fileName:file.name, mimeType:file.type||"application/octet-stream", base64Data:b64
+      });
+      if (res && res.success) {
+        c.docs[key] = true;
+        if (!c.fileUrls) c.fileUrls = {};
+        c.fileUrls[key] = res.fileUrl;
+        save(); render();
+        toast(file.name + " Drive par upload ho gaya!");
+      } else {
+        toast("Upload fail. Script URL check karein.");
+        btn.textContent = "Upload"; btn.disabled = false;
+      }
+    } else {
+      c.docs[key] = true;
+      save(); render();
+      toast(file.name + " received mark ho gaya (offline)");
+    }
+  }
+}
+
+function toBase64(file) {
+  return new Promise((res,rej) => {
+    const r = new FileReader();
+    r.onload = () => res(r.result.split(",")[1]);
+    r.onerror = rej;
+    r.readAsDataURL(file);
+  });
+}
+
+async function bulkUpload(cid) {
+  const c = clients.find(x=>x.id===cid);
+  if (!c) return;
+  const inp = document.createElement("input");
+  inp.type = "file"; inp.multiple = true;
+  inp.accept = ".pdf,.jpg,.jpeg,.png,.doc,.docx";
+  inp.onchange = async () => {
+    const files = Array.from(inp.files);
+    const tmpl  = DOC_TEMPLATES[c.loanType] || {};
+    const keys  = Object.entries(tmpl).flatMap(([cat,items]) => items.map(doc=>({cat,key:cat+"::"+doc})));
+    toast(files.length + " files upload ho rahi hain...");
+    for (let i=0;i<files.length;i++) {
+      const tgt = keys[i] || keys[keys.length-1];
+      if (!tgt) continue;
+      if (SCRIPT_URL) {
+        const b64 = await toBase64(files[i]);
+        const res = await callScript({
+          action:"uploadFile", clientId:cid, clientName:c.name,
+          docKey:tgt.key, category:tgt.cat,
+          fileName:files[i].name, mimeType:files[i].type||"application/octet-stream", base64Data:b64
+        });
+        if (res && res.success) {
+          c.docs[tgt.key] = true;
+          if (!c.fileUrls) c.fileUrls = {};
+          c.fileUrls[tgt.key] = res.fileUrl;
+        }
+      } else {
+        c.docs[tgt.key] = true;
+      }
+      save(); render();
+    }
+    toast("Bulk upload complete!");
+  };
+  inp.click();
+}
+
+async function deleteClient(id) {
+  if (!confirm("Is client ko delete karein?")) return;
+  clients = clients.filter(c=>c.id!==id);
+  save(); render();
+  if (SCRIPT_URL) await callScript({ action:"deleteClient", clientId:id });
+}
+
+// ── Filter & Render ───────────────────────────────────────────
+function setFilter(f, el) {
+  filter = f;
+  document.querySelectorAll(".pill").forEach(p=>p.classList.remove("active"));
+  el.classList.add("active");
+  render();
+}
+
+function render() {
+  const search   = document.getElementById("searchBox").value.toLowerCase();
+  const loanFilt = document.getElementById("loanFilter").value;
+
+  let list = clients.filter(c => {
+    const p = getProg(c);
+    if (filter==="pending"  && p.pct===100) return false;
+    if (filter==="complete" && p.pct<100)   return false;
+    if (filter==="partial"  && (p.pct<30||p.pct===100)) return false;
+    if (search && !c.name.toLowerCase().includes(search) && !c.loanType.toLowerCase().includes(search)) return false;
+    if (loanFilt && c.loanType!==loanFilt) return false;
+    return true;
+  });
+
+  const all = clients;
+  const td = all.reduce((a,c)=>a+Object.keys(c.docs).length,0);
+  const rd = all.reduce((a,c)=>a+Object.values(c.docs).filter(Boolean).length,0);
+  document.getElementById("s-total").textContent   = all.length;
+  document.getElementById("s-pending").textContent = all.filter(c=>getProg(c).pct<100).length;
+  document.getElementById("s-done").textContent    = all.filter(c=>getProg(c).pct===100).length;
+  document.getElementById("s-docs").textContent    = rd+"/"+td;
+
+  const el = document.getElementById("clientList");
+  if (!list.length) {
+    el.innerHTML = '<div class="empty">&#128193;<br><br>Koi client nahi mila. "+ New Client" se add karein.</div>';
+    return;
+  }
+
+  el.innerHTML = list.map(c => {
+    const p    = getProg(c);
+    const tmpl = DOC_TEMPLATES[c.loanType] || {};
+    const cc   = p.pct===100?"chip-green":p.pct>=60?"chip-amber":"chip-red";
+    const ct   = p.pct===100?"Complete":(p.total-p.done)+" Pending";
+
+    const cats = Object.entries(tmpl).map(([cat,items]) => {
+      const rows = items.map(doc => {
+        const key  = cat+"::"+doc;
+        const recv = !!c.docs[key];
+        const furl = (c.fileUrls||{})[key];
+        const safeKey = key.replace(/\\/g,"\\\\").replace(/'/g,"\\'");
+        const safeCat = cat.replace(/\\/g,"\\\\").replace(/'/g,"\\'");
+        return `<div class="doc-row ${recv?"received":""}">
+          <input type="checkbox" class="doc-cb" ${recv?"checked":""} onchange="toggleDoc('${c.id}','${safeKey}',this.checked)" />
+          <span class="doc-name">${doc}</span>
+          ${furl?`<a href="${furl}" target="_blank" class="file-link">&#128196; View</a>`:""}
+          <button class="upload-btn" onclick="triggerUpload('${c.id}','${safeKey}','${safeCat}',this)">&#8593; Upload</button>
+          <span class="doc-status ${recv?"ds-received":"ds-pending"}">${recv?"Received":"Pending"}</span>
+        </div>`;
+      }).join("");
+      return `<div class="category-block"><div class="cat-label">${cat}</div>${rows}</div>`;
+    }).join("");
+
+    const driveBtn = c.driveFolderUrl
+      ? `<a href="${c.driveFolderUrl}" target="_blank" class="btn btn-sm btn-green">&#128193; Drive Folder</a>`
+      : (SCRIPT_URL ? `<span style="font-size:11px;color:#9ca3af;">Drive folder ban raha hai...</span>` : "");
+
+    return `<div class="client-card">
+      <div class="client-header" onclick="toggleCard('body-${c.id}','chev-${c.id}')">
+        <div class="client-left">
+          <div class="avatar">${initials(c.name)}</div>
+          <div>
+            <div class="client-name">${c.name}</div>
+            <div class="client-sub">${c.loanType}${c.bank?" · "+c.bank:""}${c.phone?" · "+c.phone:""}</div>
+          </div>
+        </div>
+        <div class="client-right">
+          <div class="prog-wrap">
+            <div class="prog-bar"><div class="prog-fill" style="width:${p.pct}%;background:${progColor(p.pct)}"></div></div>
+            <span style="font-size:12px;color:#6b7280;">${p.done}/${p.total}</span>
+          </div>
+          <span class="chip ${cc}">${ct}</span>
+          <span class="chevron" id="chev-${c.id}">&#9654;</span>
+        </div>
+      </div>
+      <div class="docs-body" id="body-${c.id}">
+        <div class="docs-actions">
+          ${driveBtn}
+          <button class="btn btn-sm btn-blue" onclick="bulkUpload('${c.id}')">&#8593; Bulk Upload</button>
+          <button class="btn btn-sm btn-red" onclick="deleteClient('${c.id}')">Delete</button>
+        </div>
+        ${cats}
+      </div>
+    </div>`;
+  }).join("");
+}
+
+function toggleCard(bid, cid) {
+  document.getElementById(bid).classList.toggle("open");
+  document.getElementById(cid).classList.toggle("open");
+}
+
+function toast(msg) {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.style.display = "block";
+  clearTimeout(t._t);
+  t._t = setTimeout(()=>t.style.display="none", 3000);
+}
+</script>
+</body>
+</html>
