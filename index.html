@@ -165,7 +165,7 @@ html,body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text
 @keyframes dot{0%,100%{transform:translateY(0);opacity:.4}50%{transform:translateY(-8px);opacity:1}}
 </style>
 
-<div id="loginScreen">
+<div id="loginScreen" style="display:none">
   <div class="l-logo">🏠</div>
   <div class="l-brand">LMA EduNest LLP</div>
   <div class="l-sub">Girls Hostel · Pune</div>
@@ -1366,10 +1366,20 @@ setTimeout(() => {
   if(tb) tb.value = localStorage.getItem('lma_total_beds')||'36';
 }, 1000);
 
-// Auto hide splash after 2.5 seconds
+// Auto hide splash after 2.5 seconds then show login
 setTimeout(() => {
   const splash = document.getElementById('splashScreen');
-  if (splash) { splash.style.opacity='0'; splash.style.transform='scale(1.05)'; setTimeout(()=>splash.style.display='none',800); }
+  if (splash) {
+    splash.style.opacity='0';
+    splash.style.transform='scale(1.05)';
+    setTimeout(() => {
+      splash.style.display='none';
+      // Show login screen if not already logged in
+      if (!currentUser) {
+        document.getElementById('loginScreen').style.display='flex';
+      }
+    }, 800);
+  }
 }, 2500);
 
 document.getElementById('sJoin').value=today();
